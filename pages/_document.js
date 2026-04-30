@@ -5,13 +5,29 @@ import { ServerStyleSheet } from 'styled-components';
 
 export default class MyDocument extends Document {
   // $FlowFixMe
-  static getInitialProps({ renderPage }) {
+  static async getInitialProps(ctx) {
     const sheet = new ServerStyleSheet();
-    const page = renderPage(App => props =>
-      sheet.collectStyles(<App {...props} />)
-    );
-    const styleTags = sheet.getStyleElement();
-    return { ...page, styleTags };
+    const originalRenderPage = ctx.renderPage;
+
+    try {
+      ctx.renderPage = () =>
+        originalRenderPage({
+          enhanceApp: App => props => sheet.collectStyles(<App {...props} />),
+        });
+
+      const initialProps = await Document.getInitialProps(ctx);
+      return {
+        ...initialProps,
+        styles: (
+          <React.Fragment>
+            {initialProps.styles}
+            {sheet.getStyleElement()}
+          </React.Fragment>
+        ),
+      };
+    } finally {
+      sheet.seal();
+    }
   }
 
   render() {
@@ -42,7 +58,6 @@ export default class MyDocument extends Document {
             sizes="16x16"
             href="/static/meta/favicon-16x16.png"
           />
-          {this.props.styleTags}
         </Head>
         <body>
           <Main />

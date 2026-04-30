@@ -1,9 +1,12 @@
 module.exports = {
-  target: 'serverless',
   webpack: config => {
     // Fixes npm packages that depend on `fs` module
-    config.node = {
-      fs: 'empty',
+    config.resolve = {
+      ...config.resolve,
+      fallback: {
+        ...config.resolve.fallback,
+        fs: false,
+      },
     };
 
     return config;
